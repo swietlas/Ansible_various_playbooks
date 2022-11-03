@@ -1,0 +1,39 @@
+---
+- name: Play 1-> Create gather facts and disable interfaces without descr
+  hosts: switches
+  # hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Gather only the interfaces resource facts and no legacy facts
+      cisco.ios.ios_facts:
+        gather_subset: interfaces
+      register: facts_output  
+    
+    #- name: Shutdown notconnect interfaces
+     # ios_config:
+      #  lines: shutdown
+      #parents: "interface {{ item.key }}"
+      #with_dict: "{{  network_resources }}"
+      #when: item.value.operstatus == "down"
+
+    - name: display interfaces without description
+      debug:
+      # var: ansible_net_interfaces.keys()
+      # var: facts_output.ansible_facts.ansible_network_resources
+      # msg: "{{ facts_output.ansible_facts.ansible_net_interfaces[item]['description'] }}"
+        msg: "{{ facts_output.ansible_facts.ansible_net_interfaces[item].description }}"
+        # search facts, gets keys and check descripiton where descripiton is null
+      loop: "{{ facts_output.ansible_facts.ansible_net_interfaces.keys() }}"
+      when: 'facts_output.ansible_facts.ansible_net_interfaces[item].description ==None '  
+    
+    - name: shutdown unused ports
+      ios_config:
+        lines:
+          - shutdown
+          - description Shutdown_by_Ansible
+        parents: "interface {{ item }}"
+      loop: "{{ facts_output.ansible_facts.ansible_net_interfaces.keys() }}"
+      when: 'facts_output.ansible_facts.ansible_net_interfaces[item].description ==None '  
+
+...

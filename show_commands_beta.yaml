@@ -1,0 +1,25 @@
+---
+- name: Sample IOS show commands 
+  hosts: switches
+  gather_facts: no
+
+  tasks:
+
+  - name: Gather interfaces resource and minimal legacy facts
+    cisco.ios.ios_facts:
+      gather_subset: interfaces
+      #gather_network_resources: interfaces
+    register: facts_output
+
+  - name: display interfaces without description
+    debug:
+      # var: ansible_net_interfaces.keys()
+      # var: facts_output.ansible_facts.ansible_network_resources
+      # msg: "{{ facts_output.ansible_facts.ansible_net_interfaces[item]['description'] }}"
+      msg: 
+        - "{{ facts_output.ansible_facts.ansible_net_interfaces[item].description }}"
+        - "{{ facts_output.ansible_facts.ansible_net_interfaces[item].operstatus }}"
+    # search facts, gets keys and check descripiton where descripiton is null
+    loop: "{{ facts_output.ansible_facts.ansible_net_interfaces.keys() }}"
+    when: 'facts_output.ansible_facts.ansible_net_interfaces[item].description ==None '
+  

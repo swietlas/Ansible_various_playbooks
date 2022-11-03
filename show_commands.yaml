@@ -1,0 +1,73 @@
+---
+- name: Sample IOS show commands 
+  hosts: switches
+  # hosts: all
+  gather_facts: no
+
+  tasks:
+
+  - name: Gather interfaces resource and minimal legacy facts
+    cisco.ios.ios_facts:
+      gather_subset: interfaces
+      #gather_network_resources: interfaces
+    register: facts_output
+    #tags: facts
+
+
+  - name: Show devices specific ios_facts
+    debug:
+      msg:
+        - 'Hostname of tearget host is: "{{ ansible_net_hostname }}" '
+        - 'The IOS version is: "{{ ansible_net_version }}" '
+        - 'The serial number is: "{{ ansible_net_serialnum }}" '
+        # - 'IOS type is : " "{{ ansible_net_model }}" '
+        - 'IOS type is : " "{{ ansible_net_system }}" '
+        - 'Image name: "{{ ansible_net_image }}" '
+    tags: facts
+
+  - name: Try - display interfaces without description for Shutdown script
+    debug:
+      # var: ansible_net_interfaces.keys()
+      # var: facts_output.ansible_facts.ansible_network_resources
+      # msg: "{{ facts_output.ansible_facts.ansible_net_interfaces[item]['description'] }}"
+      msg: 
+        - "{{ facts_output.ansible_facts.ansible_net_interfaces[item].description }}"
+        - "{{ facts_output.ansible_facts.ansible_net_interfaces[item].operstatus }}"
+    # search facts, gets keys and check descripiton where descripiton is null
+    loop: "{{ facts_output.ansible_facts.ansible_net_interfaces.keys() }}"
+    when: 'facts_output.ansible_facts.ansible_net_interfaces[item].description ==None '
+    tags: shports
+  
+  - name: run show ip int brief IPv4
+    ios_command:
+      commands: show ip interface brief
+    register: myintipv4
+    tags: shipv4
+
+  - name: display value of "myintipv4" variable
+    debug:
+      var: myintipv4["stdout_lines"][0]
+    tags: shipv4
+
+  - name: run show ipv6 int brief IPv6
+    ios_command:
+      commands: show ipv6 interface brief
+    register: myintipv6
+    tags: shipv6
+
+  - name: display value of "myintipv6" variable
+    debug:
+      var: myintipv6["stdout_lines"][0]
+    tags: shipv6
+
+  - name: run 'show vlans' and set it to variable myvlans
+    ios_command:
+      commands: show vlan brief
+    register: myvlans
+    when: "'R' not in inventory_hostname"
+    tags: shvlans
+
+  - name: display data read from value of "myvlans" variable
+    ansible.builtin.debug:
+      var: myvlans["stdout_lines"][0]
+    tags: shvlans

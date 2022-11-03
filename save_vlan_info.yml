@@ -1,0 +1,33 @@
+---
+- name: VLAN info to file
+  hosts: switches
+  gather_facts: false
+
+  tasks:
+  - block:
+      - name: Check directories
+        stat:
+          path: './vlan_backups'
+        register: directory_data
+
+      - debug: var=directory_data.stat.path
+
+  - name: Create directory if it doesn't already exist
+    file:
+      path: './vlan_backups'
+      state: directory
+      mode: 0755
+      group: swt
+      owner: swt
+    when: not directory_data.stat.exists
+
+  - name: use vlans resource module
+    cisco.ios.ios_vlans:
+      state: gathered
+    register: vlan_config
+
+  - name: copy vlan_config to file
+    copy:
+      content: "{{ vlan_config | to_nice_yaml }}"
+      dest: "{{ playbook_dir }}/vlan_backups/{{ inventory_hostname }}_vlan.yml"
+...
